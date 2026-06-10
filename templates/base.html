@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TubeSync{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        // Primary colors
+                        primary: {
+                            50:  '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        // Accent colors
+                        accent: {
+                            50:  '#fdf2f8',
+                            100: '#fce7f3',
+                            200: '#fbcfe8',
+                            300: '#f9a8d4',
+                            400: '#f472b6',
+                            500: '#ec4899',
+                            600: '#db2777',
+                            700: '#be185d',
+                            800: '#9d174d',
+                            900: '#831843',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter var', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer components {
+            /* Button styles */
+            .btn-primary {
+                @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+            }
+            .btn-secondary {
+                @apply inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500;
+            }
+            .btn-accent {
+                @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-accent-600 hover:bg-accent-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-500;
+            }
+            
+            /* Card styles */
+            .card {
+                @apply bg-white shadow rounded-lg p-6;
+            }
+            
+            /* Form styles */
+            .form-input {
+                @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm;
+            }
+            .form-label {
+                @apply block text-sm font-medium text-gray-700;
+            }
+            
+            /* Table styles */
+            .table-container {
+                @apply mt-8 flex flex-col;
+            }
+            .table {
+                @apply min-w-full divide-y divide-gray-300;
+            }
+            .table-header {
+                @apply bg-gray-50;
+            }
+            .table-header-cell {
+                @apply py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900;
+            }
+            .table-body {
+                @apply divide-y divide-gray-200 bg-white;
+            }
+            .table-body-cell {
+                @apply whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full">
+    <!-- Navigation -->
+    <nav class="bg-white shadow">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-16 justify-between">
+                <div class="flex">
+                    <div class="flex flex-shrink-0 items-center">
+                        <a href="/" class="text-xl font-bold text-primary-600">TubeSync</a>
+                    </div>
+                </div>
+                {% if session.get('credentials') %}
+                <div class="flex items-center">
+                    <a href="{{ url_for('logout') }}" class="btn-secondary">Logout</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+            const icon = type === 'success' ? 
+                '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>' : 
+                '<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+
+            toast.className = `flex items-center p-4 text-white rounded shadow-lg transition-opacity duration-300 ${bgColor}`;
+            toast.innerHTML = `${icon} <span class="font-medium">${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style type="text/tailwindcss">
+    @layer components {
+        /* Stats card styles */
+        .stat-card {
+            @apply bg-white overflow-hidden shadow rounded-lg;
+        }
+        .stat-card-body {
+            @apply px-4 py-5 sm:p-6;
+        }
+        .stat-card-title {
+            @apply text-sm font-medium text-gray-500 truncate;
+        }
+        .stat-card-value {
+            @apply mt-1 text-3xl font-semibold text-gray-900;
+        }
+        
+        /* Alert styles */
+        .alert {
+            @apply rounded-md p-4 mb-4;
+        }
+        .alert-success {
+            @apply bg-green-50 text-green-800;
+        }
+        .alert-error {
+            @apply bg-red-50 text-red-800;
+        }
+        
+        /* Badge styles */
+        .badge {
+            @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+        }
+        .badge-success {
+            @apply bg-green-100 text-green-800;
+        }
+        .badge-error {
+            @apply bg-red-100 text-red-800;
+        }
+
+        /* Tag styles */
+        .tag {
+            @apply inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 mr-1 mb-1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Page header -->
+<div class="md:flex md:items-center md:justify-between">
+    <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+            {% if channel and channel.title %}{{ channel.title }}{% else %}Dashboard{% endif %}
+        </h2>
+    </div>
+    <div class="mt-4 flex md:ml-4 md:mt-0">
+        {% if channel and channel.url %}
+        <a href="{{ channel.url }}" target="_blank" class="btn-secondary">
+            <svg class="h-5 w-5 mr-2 inline" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+            </svg>
+            View Channel
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Text Replacement Tool -->
+<div class="mt-8">
+    <div class="card">
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Text Replacement Tool</h3>
+                <p class="mt-1 text-sm text-gray-500">Update video titles, descriptions, and tags in bulk.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-12">
+                <div class="sm:col-span-3">
+                    <label class="form-label" for="actionType">Action</label>
+                    <select id="actionType" class="form-input mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md">
+                        <option value="replace">Find & Replace</option>
+                        <option value="append">Add to End (Append)</option>
+                        <option value="prepend">Add to Beginning (Prepend)</option>
+                    </select>
+                </div>
+                <div class="sm:col-span-4" id="findTextContainer">
+                    <label class="form-label" for="findText">Find Text</label>
+                    <input type="text" id="findText" class="form-input" placeholder="Text to find...">
+                </div>
+                <div class="sm:col-span-5" id="replaceTextContainer">
+                    <label class="form-label" for="replaceText" id="replaceTextLabel">Replace With</label>
+                    <input type="text" id="replaceText" class="form-input" placeholder="Text to apply...">
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center space-x-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="includeTitles" class="form-checkbox" checked>
+                        <span class="ml-2">Titles</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="includeDescriptions" class="form-checkbox" checked>
+                        <span class="ml-2">Descriptions</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="includeTags" class="form-checkbox" checked>
+                        <span class="ml-2">Tags</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div>
+                <label class="form-label">Preview</label>
+                <div id="previewArea" class="mt-1 p-4 bg-gray-50 rounded-md text-sm text-gray-700">
+                    Preview will appear here...
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button class="btn-secondary" onclick="previewChanges()">Preview</button>
+                <button class="btn-primary" onclick="applyChanges()" id="updateBtn">Update Selected</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Videos List -->
+<div class="mt-8">
+    <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+            <h3 class="text-xl font-semibold text-gray-900">Your Videos</h3>
+            <p class="mt-2 text-sm text-gray-700">Select videos to update their metadata.</p>
+        </div>
+        <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+            <button type="button" class="btn-secondary" onclick="toggleAllVideos()">Toggle All</button>
+        </div>
+    </div>
+    
+    <div class="mt-4 flow-root">
+        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                <table class="min-w-full divide-y divide-gray-300">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">
+                                <input type="checkbox" id="selectAll" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                            </th>
+                            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Video</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Title & Description</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Tags</th>
+                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-0">
+                                <span class="sr-only">Actions</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        {% for video in videos %}
+                        <tr class="video-row" data-video-id="{{ video.id }}" data-title="{{ video.title }}" data-description="{{ video.description }}" data-tags="{{ video.tags|join(',') if video.tags else '' }}">
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
+                                <input type="checkbox" class="video-checkbox h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-600">
+                            </td>
+                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm">
+                                <div class="flex items-center">
+                                    <img class="h-16 w-24 object-cover" src="{{ video.thumbnail_url }}" alt="">
+                                </div>
+                            </td>
+                            <td class="px-3 py-4 text-sm text-gray-500">
+                                <div class="font-medium text-gray-900 video-title">{{ video.title }}</div>
+                                <div class="mt-1 text-gray-500 line-clamp-2 video-description">{{ video.description }}</div>
+                            </td>
+                            <td class="px-3 py-4 text-sm text-gray-500">
+                                <div class="flex flex-wrap gap-1 video-tags">
+                                    {% if video.tags %}
+                                        {% for tag in video.tags %}
+                                            <span class="tag">{{ tag }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0">
+                                <button class="btn-secondary" onclick="editVideo('{{ video.id }}')">Edit</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select all checkbox functionality
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const videoCheckboxes = document.querySelectorAll('.video-checkbox');
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        videoCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateButtonState();
+    });
+
+    // Individual checkbox change
+    videoCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateButtonState);
+    });
+
+    // Text input and select changes
+    ['findText', 'replaceText', 'actionType'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+            updateButtonState();
+            if (document.getElementById('actionType').value !== 'replace' && document.getElementById('replaceText').value) {
+                previewChanges();
+            } else if (document.getElementById('findText').value && document.getElementById('replaceText').value) {
+                previewChanges();
+            }
+        });
+        if(id !== 'actionType') {
+            document.getElementById(id).addEventListener('input', () => {
+                updateButtonState();
+            });
+        }
+    });
+
+    // Checkbox state changes
+    ['includeTitles', 'includeDescriptions', 'includeTags'].forEach(id => {
+        document.getElementById(id).addEventListener('change', () => {
+            updateButtonState();
+            previewChanges();
+        });
+    });
+
+    updateButtonState();
+});
+
+function updateButtonState() {
+    const actionType = document.getElementById('actionType').value;
+    
+    // UI logic for hiding/showing "Find Text"
+    if (actionType === 'replace') {
+        document.getElementById('findTextContainer').style.display = 'block';
+        document.getElementById('replaceTextLabel').textContent = 'Replace With';
+        document.getElementById('replaceTextContainer').classList.remove('sm:col-span-9');
+        document.getElementById('replaceTextContainer').classList.add('sm:col-span-5');
+    } else {
+        document.getElementById('findTextContainer').style.display = 'none';
+        document.getElementById('replaceTextLabel').textContent = 'Text to Add';
+        document.getElementById('replaceTextContainer').classList.remove('sm:col-span-5');
+        document.getElementById('replaceTextContainer').classList.add('sm:col-span-9');
+    }
+
+    const hasSelection = document.querySelectorAll('.video-checkbox:checked').length > 0;
+    
+    let hasText = false;
+    if (actionType === 'replace') {
+        hasText = document.getElementById('findText').value.trim() !== '' && document.getElementById('replaceText').value.trim() !== '';
+    } else {
+        hasText = document.getElementById('replaceText').value.trim() !== '';
+    }
+    
+    const hasFieldSelection = document.getElementById('includeTitles').checked || 
+                            document.getElementById('includeDescriptions').checked || 
+                            document.getElementById('includeTags').checked;
+    
+    document.getElementById('updateBtn').disabled = !(hasSelection && hasText && hasFieldSelection);
+}
+
+function getSelectedVideos() {
+    const checkboxes = document.querySelectorAll('.video-checkbox:checked');
+    return Array.from(checkboxes).map(checkbox => checkbox.closest('.video-row'));
+}
+
+function previewChanges() {
+    const actionType = document.getElementById('actionType').value;
+    const findText = document.getElementById('findText').value;
+    const replaceText = document.getElementById('replaceText').value;
+    const previewArea = document.getElementById('previewArea');
+    const includeTitles = document.getElementById('includeTitles').checked;
+    const includeDescriptions = document.getElementById('includeDescriptions').checked;
+    const includeTags = document.getElementById('includeTags').checked;
+    
+    const selectedVideos = getSelectedVideos();
+    if (selectedVideos.length === 0) {
+        previewArea.textContent = 'Please select videos to preview changes.';
+        return;
+    }
+    
+    let previewContent = 'Preview of changes:\n\n';
+    selectedVideos.forEach(videoRow => {
+        const videoId = videoRow.dataset.videoId;
+        const originalTitle = videoRow.dataset.title;
+        const originalDescription = videoRow.dataset.description;
+        const originalTags = videoRow.dataset.tags ? videoRow.dataset.tags.split(',').filter(tag => tag.trim()) : [];
+        
+        previewContent += `Video ID: ${videoId}\n`;
+        
+        if (includeTitles) {
+            let newTitle = originalTitle;
+            if (actionType === 'replace') newTitle = originalTitle.replace(new RegExp(findText, 'g'), replaceText);
+            else if (actionType === 'append') newTitle = `${originalTitle} ${replaceText}`;
+            else if (actionType === 'prepend') newTitle = `${replaceText} ${originalTitle}`;
+            previewContent += `Title: ${originalTitle} → ${newTitle}\n`;
+        }
+        
+        if (includeDescriptions) {
+            let newDesc = originalDescription.substring(0, 50) + '...';
+            if (actionType === 'replace') newDesc = originalDescription.replace(new RegExp(findText, 'g'), replaceText).substring(0, 50) + '...';
+            else if (actionType === 'append') newDesc = `${originalDescription.substring(0, 30)}...\n${replaceText}`;
+            else if (actionType === 'prepend') newDesc = `${replaceText}\n${originalDescription.substring(0, 30)}...`;
+            previewContent += `Description: ${originalDescription.substring(0, 50)}... → ${newDesc}\n`;
+        }
+        
+        if (includeTags) {
+            let newTags = [...originalTags];
+            if (actionType === 'replace' && originalTags.length > 0) newTags = originalTags.map(tag => tag.replace(new RegExp(findText, 'g'), replaceText));
+            else if (actionType === 'append') newTags.push(replaceText);
+            else if (actionType === 'prepend') newTags.unshift(replaceText);
+            previewContent += `Tags: [${originalTags.join(', ')}] → [${newTags.join(', ')}]\n`;
+        }
+        
+        previewContent += '\n';
+    });
+    
+    previewArea.textContent = previewContent;
+}
+
+function applyChanges() {
+    const actionType = document.getElementById('actionType').value;
+    const findText = document.getElementById('findText').value;
+    const replaceText = document.getElementById('replaceText').value;
+    const includeTitles = document.getElementById('includeTitles').checked;
+    const includeDescriptions = document.getElementById('includeDescriptions').checked;
+    const includeTags = document.getElementById('includeTags').checked;
+    
+    const selectedVideos = getSelectedVideos();
+    if (selectedVideos.length === 0) {
+        showToast('Please select videos to update.', 'error');
+        return;
+    }
+    
+    const videoIds = selectedVideos.map(row => row.dataset.videoId);
+    
+    // Show loading state
+    const updateBtn = document.getElementById('updateBtn');
+    const originalText = updateBtn.textContent;
+    updateBtn.disabled = true;
+    updateBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Updating...';
+    
+    // Make API call to update videos
+    fetch('/api/videos/batch-update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            video_ids: videoIds,
+            action_type: actionType,
+            old_text: findText,
+            new_text: replaceText,
+            include_titles: includeTitles,
+            include_descriptions: includeDescriptions,
+            include_tags: includeTags
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const successCount = data.results.filter(r => r.status === 'success').length;
+            const errorCount = data.results.filter(r => r.status === 'error').length;
+            
+            let message = `Successfully updated ${successCount} video(s).`;
+            if (errorCount > 0) {
+                message += ` Failed to update ${errorCount} video(s).`;
+                showToast(message, 'error');
+            } else {
+                showToast(message, 'success');
+            }
+            
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast('Error updating videos: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Error updating videos: ' + error.message, 'error');
+    })
+    .finally(() => {
+        updateBtn.disabled = false;
+        updateBtn.textContent = originalText;
+    });
+}
+
+function toggleAllVideos() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    selectAllCheckbox.checked = !selectAllCheckbox.checked;
+    selectAllCheckbox.dispatchEvent(new Event('change'));
+}
+
+function editVideo(videoId) {
+    // Implement individual video editing
+    console.log('Editing video:', videoId);
+}
+</script>
+{% endblock %}
