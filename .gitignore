@@ -40,3 +40,7 @@ token.pickle
 
 # Logs
 *.log
+
+# Mac OS
+.DS_Store
+._*
