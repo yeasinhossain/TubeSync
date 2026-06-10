@@ -37,8 +37,8 @@ def login():
         creds = session['client_credentials']
         client = YouTubeClient(client_id=creds['client_id'], client_secret=creds['client_secret'])
         redirect_uri = url_for('oauth2callback', _external=True)
-        # Ensure redirect_uri uses https in production
-        if request.headers.get('X-Forwarded-Proto') == 'https':
+        # Aggressively ensure HTTPS in production behind Vercel's proxy
+        if 'localhost' not in redirect_uri and '127.0.0.1' not in redirect_uri:
             redirect_uri = redirect_uri.replace('http://', 'https://')
             
         auth_url, state = client.get_authorization_url(redirect_uri=redirect_uri)
@@ -64,7 +64,7 @@ def oauth2callback():
 
         client = YouTubeClient(client_id=creds['client_id'], client_secret=creds['client_secret'])
         redirect_uri = url_for('oauth2callback', _external=True)
-        if request.headers.get('X-Forwarded-Proto') == 'https':
+        if 'localhost' not in redirect_uri and '127.0.0.1' not in redirect_uri:
             redirect_uri = redirect_uri.replace('http://', 'https://')
             
         client.complete_oauth_flow(
