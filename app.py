@@ -191,6 +191,14 @@ def batch_update_videos():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/switch-channel')
+def switch_channel():
+    try:
+        session.pop('credentials', None)
+        return redirect(url_for('login'))
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
 @app.route('/logout')
 def logout():
     try:

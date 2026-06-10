@@ -104,8 +104,9 @@
                     </div>
                 </div>
                 {% if session.get('credentials') %}
-                <div class="flex items-center">
-                    <a href="{{ url_for('logout') }}" class="btn-secondary">Logout</a>
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('switch_channel') }}" class="btn-secondary text-sm px-3 py-1.5">Switch Channel</a>
+                    <a href="{{ url_for('logout') }}" class="btn-secondary text-sm px-3 py-1.5 text-red-600 border-red-200 hover:bg-red-50">Disconnect App</a>
                 </div>
                 {% endif %}
             </div>
